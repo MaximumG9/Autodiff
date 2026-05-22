@@ -26,7 +26,7 @@ pub trait NaryDOp<F: Float, const WIDTH: usize> {
 
 // A struct representing a value, and its derivative along some argument
 // DFloat doesn't have helper functions because the only current point is to feed to DOp::grad
-pub struct DFloat<F : Float> {
+pub struct DFloat<F: Float> {
     pub value: F,
     pub derivative: F
 }
