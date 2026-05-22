@@ -4,7 +4,7 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use num::Float;
-    use autodiff::GFloat;
+    use autodiff::gfloat::GFloat;
     use autodiffmacros::grad;
 
     fn test<F : Float>(a: F, b: F) -> F {
