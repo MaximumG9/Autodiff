@@ -1,7 +1,6 @@
-pub mod gfloat;
+use num::Float;
 
-use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
-use num::{Float, Num, NumCast, One, ToPrimitive, Zero};
+pub mod gfloat;
 
 pub trait UnaryDOp<F: Float> {
     // the actual operation
@@ -22,6 +21,17 @@ pub trait NaryDOp<F: Float, const WIDTH: usize> {
     fn op(args: [F;WIDTH]) -> F;
     // the gradient vector of the operation for a and b
     fn grad(args: [DFloat<F>;WIDTH]) -> [F;WIDTH];
+}
+
+// Floats should have conversion from f64 so this forces that behaviour
+pub trait FloatCast<F: Float> {
+    fn get(value: F) -> Self;
+}
+
+impl<F: Float> FloatCast<f64> for F {
+    fn get(value: f64) -> Self {
+        F::from(value).expect("All floats should be able to convert from f64")
+    }
 }
 
 // A struct representing a value, and its derivative along some argument
