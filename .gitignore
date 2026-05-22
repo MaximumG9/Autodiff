@@ -1,0 +1,8 @@
+/target
+**/*.rs.bk
+Cargo.lock
+autodiffmacros/target
+autodiffmacros/Cargo.lock
+autodiffTests/target
+autodiffTests/Cargo.lock
+.idea

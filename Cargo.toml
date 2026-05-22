@@ -1,0 +1,13 @@
+[package]
+name = "autodiff"
+version = "0.1.0"
+authors = ["maximumg9 <maximumg999@gmail.com>"]
+description = "A crate for automatic gradients"
+keywords = ["proc_macro", "procmacro"]
+edition = "2018"
+
+[dependencies]
+quote = "1"
+
+syn = "1.0"
+num = "0.4.3"
