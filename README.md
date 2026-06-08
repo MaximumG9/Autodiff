@@ -27,4 +27,5 @@ First [install rust/cargo](https://rustup.rs/).
 Clone this repository `git clone https://github.com/MaximumG9/Autodiff.git`.
 Open the `autoDiffExamples` directory in a terminal and run `cargo run`.
 Modify `autodiffExamples/src/main.rs` to modify the example code.
-To get an `f64` constant, `F::get` can be used in the method.
+To get a float constant, `W::get` can be used in the method.
+The `WrappedFloat` also supports addition division multiplication and subtraction by floats on the right side.

@@ -1,16 +1,15 @@
-use num::Float;
 use autodiff::gfloat::GFloat;
+use autodiff::WrappedFloat;
 use autodiffmacros::grad;
-use autodiff::FloatCast;
 
-fn paraboloid<F: Float>(x: F, y: F) -> F {
+fn paraboloid<W: WrappedFloat<f64>>(x: W, y: W) -> W {
     x * x + y * y
 }
 
-fn quadratic_formula<F: Float>(a: F, b: F, c: F) -> (F,F) {
+fn quadratic_formula<W: WrappedFloat<f64>>(a: W, b: W, c: W) -> (W,W) {
     (
-        (-b + (b * b - F::get(4.0) * a * c).sqrt()) / (F::get(2.0) * a),
-        (-b - (b * b - F::get(4.0) * a * c).sqrt()) / (F::get(2.0) * a)
+        (-b + (b * b - a * c * 4.0).sqrt()) / (a * 2.0),
+        (-b - (b * b - a * c * 4.0).sqrt()) / (a * 2.0)
     )
 }
 

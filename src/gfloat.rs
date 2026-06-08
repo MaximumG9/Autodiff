@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::num::FpCategory;
 use std::ops::{Add, Div, Mul, Neg, Rem, Sub};
 use num::{Float, Num, NumCast, One, ToPrimitive, Zero};
-use crate::{BinaryDOp, DFloat, NaryDOp, UnaryDOp};
+use crate::{BinaryDOp, DFloat, NaryDOp, UnaryDOp, WrappedFloat};
 
 #[derive(Debug)]
 pub struct GFloat<F: Float, const ARGWIDTH: usize> {
@@ -26,13 +26,6 @@ impl<F: Float, const ARGWIDTH: usize> GFloat<F, ARGWIDTH> {
 }
 
 impl<F: Float, const ARGWIDTH: usize> GFloat<F, ARGWIDTH> {
-    pub fn from(value: F) -> GFloat<F, ARGWIDTH> {
-        GFloat {
-            value,
-            grad: [F::zero();ARGWIDTH]
-        }
-    }
-
     pub fn new_var(value: F, index: usize) -> GFloat<F, ARGWIDTH> {
         let mut grad = [F::zero(); ARGWIDTH];
         grad[index] = F::one();
@@ -93,7 +86,7 @@ impl<F: Float, const ARGWIDTH: usize> Num for GFloat<F, ARGWIDTH> {
     type FromStrRadixErr = F::FromStrRadixErr;
 
     fn from_str_radix(str: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        F::from_str_radix(str, radix).map(GFloat::from)
+        F::from_str_radix(str, radix).map(GFloat::get)
     }
 }
 
@@ -105,7 +98,7 @@ impl<F: Float, const ARGWIDTH: usize> PartialEq for GFloat<F, ARGWIDTH> {
 
 impl<F: Float, const ARGWIDTH: usize> Zero for GFloat<F, ARGWIDTH> {
     fn zero() -> Self {
-        GFloat::from(F::zero())
+        GFloat::get(F::zero())
     }
 
     fn is_zero(&self) -> bool {
@@ -115,7 +108,7 @@ impl<F: Float, const ARGWIDTH: usize> Zero for GFloat<F, ARGWIDTH> {
 
 impl<F: Float, const ARGWIDTH: usize> One for GFloat<F, ARGWIDTH> {
     fn one() -> Self {
-        GFloat::from(F::one())
+        GFloat::get(F::one())
     }
 }
 
@@ -169,9 +162,20 @@ impl<F: Float, const ARGWIDTH: usize> Div<Self> for GFloat<F, ARGWIDTH> {
 
     fn div(self, rhs: Self) -> Self::Output {
         let mut grad = [F::zero(); ARGWIDTH];
-        for i in 0..ARGWIDTH {
-            grad[i] = (self.grad[i] * rhs.value - rhs.grad[i] * self.value)
-                / (rhs.value * rhs.value);
+        if rhs.is_zero() {
+            for i in 0..ARGWIDTH {
+                if !self.grad[i].is_zero() {
+                    grad[i] = -self.grad[i] / (rhs.value * rhs.value);
+                }
+                if !rhs.grad[i].is_zero() {
+                    grad[i] = grad[i] - rhs.grad[i] / (rhs.value * rhs.value);
+                }
+            }
+        } else {
+            for i in 0..ARGWIDTH {
+                grad[i] = ((self.grad[i] * rhs.value) - (rhs.grad[i] * self.value))
+                    / (rhs.value * rhs.value);
+            }
         }
         GFloat {
             value: self.value / rhs.value,
@@ -187,14 +191,14 @@ impl<F: Float, const ARGWIDTH: usize> Rem<Self> for GFloat<F, ARGWIDTH> {
 
         let new_value = self.value % rhs.value;
 
-        if new_value == F::zero() {
+        if (new_value == F::zero() && !self.value.is_zero()) || new_value.is_nan() {
             let mut grad = [F::zero(); ARGWIDTH];
             for i in 0..ARGWIDTH {
-                if self.grad[i] != F::zero() {
+                if !rhs.grad[i].is_zero() || !self.grad[i].is_zero() {
                     grad[i] = F::nan();
                 }
             }
-            return GFloat {
+            GFloat {
                 value: new_value,
                 grad
             }
@@ -202,7 +206,7 @@ impl<F: Float, const ARGWIDTH: usize> Rem<Self> for GFloat<F, ARGWIDTH> {
             let mut grad = [F::zero(); ARGWIDTH];
             for i in 0..ARGWIDTH {
                 grad[i] = self.grad[i];
-                grad[i] = grad[i] - rhs.grad[i] * (self.value / rhs.value).floor();
+                grad[i] = grad[i] - (rhs.grad[i] * (self.value / rhs.value).floor());
             }
 
             GFloat {
@@ -226,7 +230,7 @@ impl<F: Float, const ARGWIDTH: usize> Clone for GFloat<F, ARGWIDTH> {
 
 impl<F: Float, const ARGWIDTH: usize> NumCast for GFloat<F, ARGWIDTH> {
     fn from<P: ToPrimitive>(n: P) -> Option<Self> {
-        F::from(n).map(GFloat::from)
+        F::from(n).map(GFloat::get)
     }
 }
 
@@ -261,13 +265,13 @@ impl<F: Float, const ARGWIDTH: usize> Neg for GFloat<F, ARGWIDTH> {
 }
 
 impl<F: Float, const ARGWIDTH: usize> Float for GFloat<F, ARGWIDTH> {
-    fn nan() -> Self { GFloat::from(F::nan()) }
-    fn infinity() -> Self { GFloat::from(F::infinity()) }
-    fn neg_infinity() -> Self { GFloat::from(F::neg_infinity()) }
-    fn neg_zero() -> Self { GFloat::from(F::neg_zero()) }
-    fn min_value() -> Self { GFloat::from(F::min_value()) }
-    fn min_positive_value() -> Self { GFloat::from(F::min_positive_value()) }
-    fn max_value() -> Self { GFloat::from(F::max_value()) }
+    fn nan() -> Self { GFloat::get(F::nan()) }
+    fn infinity() -> Self { GFloat::get(F::infinity()) }
+    fn neg_infinity() -> Self { GFloat::get(F::neg_infinity()) }
+    fn neg_zero() -> Self { GFloat::get(F::neg_zero()) }
+    fn min_value() -> Self { GFloat::get(F::min_value()) }
+    fn min_positive_value() -> Self { GFloat::get(F::min_positive_value()) }
+    fn max_value() -> Self { GFloat::get(F::max_value()) }
 
     fn is_nan(self) -> bool { self.value.is_nan() }
     fn is_infinite(self) -> bool { self.value.is_infinite() }
@@ -299,7 +303,7 @@ impl<F: Float, const ARGWIDTH: usize> Float for GFloat<F, ARGWIDTH> {
     }
     fn round(self) -> Self {
         let result = self.value.round();
-        if result == self.value {
+        if result == (self.value + F::from(0.5).unwrap()) {
             self.nan_grad(result)
         } else {
             GFloat {
@@ -345,7 +349,7 @@ impl<F: Float, const ARGWIDTH: usize> Float for GFloat<F, ARGWIDTH> {
         if self.is_zero() {
             self.nan_grad(F::zero())
         } else {
-            GFloat::from(self.value.signum())
+            GFloat::get(self.value.signum())
         }
     }
 
@@ -382,7 +386,7 @@ impl<F: Float, const ARGWIDTH: usize> Float for GFloat<F, ARGWIDTH> {
     fn powi(self, n: i32) -> Self {
         let mut grad = [F::zero(); ARGWIDTH];
         for i in 0..ARGWIDTH {
-            grad[i] = grad[i] * self.value.powi(n-1);
+            grad[i] = grad[i] * F::from(n).expect("Float type must support n") * self.value.powi(n-1);
         }
         GFloat {
             value: self.value.powi(n),
@@ -405,7 +409,7 @@ impl<F: Float, const ARGWIDTH: usize> Float for GFloat<F, ARGWIDTH> {
     fn sqrt(self) -> Self {
         let mut grad = self.grad;
         for i in 0..ARGWIDTH {
-            grad[i] = grad[i] / self.value.sqrt();
+            grad[i] = - grad[i] / (F::from(2).expect("Float should implement 2") * self.value.sqrt());
         }
         GFloat {
             value: self.value.sqrt(),
