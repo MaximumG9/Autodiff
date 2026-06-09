@@ -1,8 +1,8 @@
-use crate::gfloat::GFloat;
+use crate::fwdgfloat::FwdGFloat;
 use num::Float;
 use std::ops::{Add, Div, Mul, Sub};
 
-pub mod gfloat;
+pub mod fwdgfloat;
 
 pub trait UnaryDOp<F: Float> {
     // the actual operation
@@ -25,18 +25,18 @@ pub trait NaryDOp<F: Float, const WIDTH: usize> {
     fn grad(args: [DFloat<F>;WIDTH]) -> [F;WIDTH];
 }
 
-impl<F: Float, const ARGWIDTH: usize> Add<F> for GFloat<F, ARGWIDTH> {
+impl<F: Float, const ARGWIDTH: usize> Add<F> for FwdGFloat<F, ARGWIDTH> {
     type Output = Self;
 
     fn add(self, rhs: F) -> Self::Output {
-        GFloat {
+        FwdGFloat {
             value: self.value + rhs,
             grad: self.grad
         }
     }
 }
 
-impl<F: Float, const ARGWIDTH: usize> Mul<F> for GFloat<F, ARGWIDTH> {
+impl<F: Float, const ARGWIDTH: usize> Mul<F> for FwdGFloat<F, ARGWIDTH> {
     type Output = Self;
 
     fn mul(self, rhs: F) -> Self::Output {
@@ -44,25 +44,25 @@ impl<F: Float, const ARGWIDTH: usize> Mul<F> for GFloat<F, ARGWIDTH> {
         for i in 0..ARGWIDTH {
             grad[i] = grad[i] * rhs;
         }
-        GFloat {
+        FwdGFloat {
             value: self.value * rhs,
             grad
         }
     }
 }
 
-impl<F: Float, const ARGWIDTH: usize> Sub<F> for GFloat<F, ARGWIDTH> {
+impl<F: Float, const ARGWIDTH: usize> Sub<F> for FwdGFloat<F, ARGWIDTH> {
     type Output = Self;
 
     fn sub(self, rhs: F) -> Self::Output {
-        GFloat {
+        FwdGFloat {
             value: self.value - rhs,
             grad: self.grad
         }
     }
 }
 
-impl<F: Float, const ARGWIDTH: usize> Div<F> for GFloat<F, ARGWIDTH> {
+impl<F: Float, const ARGWIDTH: usize> Div<F> for FwdGFloat<F, ARGWIDTH> {
     type Output = Self;
 
     fn div(self, rhs: F) -> Self::Output {
@@ -70,16 +70,16 @@ impl<F: Float, const ARGWIDTH: usize> Div<F> for GFloat<F, ARGWIDTH> {
         for i in 0..ARGWIDTH {
             grad[i] = grad[i] / rhs;
         }
-        GFloat {
+        FwdGFloat {
             value: self.value / rhs,
             grad
         }
     }
 }
 
-impl<F: Float, const ARGWIDTH: usize> WrappedFloat<F> for GFloat<F,ARGWIDTH> {
+impl<F: Float, const ARGWIDTH: usize> WrappedFloat<F> for FwdGFloat<F,ARGWIDTH> {
     fn get(value: F) -> Self {
-        GFloat {
+        FwdGFloat {
             value,
             grad: [F::zero();ARGWIDTH]
         }

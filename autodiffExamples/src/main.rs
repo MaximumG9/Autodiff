@@ -1,4 +1,4 @@
-use autodiff::gfloat::GFloat;
+use autodiff::fwdgfloat::FwdGFloat;
 use autodiff::WrappedFloat;
 use autodiffmacros::grad;
 
@@ -14,7 +14,7 @@ fn quadratic_formula<W: WrappedFloat<f64>>(a: W, b: W, c: W) -> (W,W) {
 }
 
 fn main() {
-    let result: GFloat<f64,2> = grad!(paraboloid(5f64,2f64));
+    let result: FwdGFloat<f64,2> = grad!(paraboloid(5f64,2f64));
     println!("x^2 + y^2 paraboloid at (5,2): {:?}",result);
     let (pos, neg) = grad!(quadratic_formula(1f64,0f64,-1f64));
     println!("quadratic formula for 1x^2 + 0x - 1, +: {:?} -: {:?}",pos,neg);

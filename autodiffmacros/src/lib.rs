@@ -16,7 +16,7 @@ fn impl_hello_macro(ast: &syn::ExprCall) -> TokenStream {
     let arglen = ast.args.len();
     ast.args.iter().enumerate()
         .map(|(i,a)| {
-            return quote! {autodiff::gfloat::GFloat::<_,#arglen>::new_var(#a, #i),}
+            return quote! {autodiff::fwdgfloat::FwdGFloat::<_,#arglen>::new_var(#a, #i),}
         })
         .for_each(
             |a| result.extend(a)
